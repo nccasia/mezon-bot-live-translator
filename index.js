@@ -7,9 +7,6 @@ dotenv.config();
 
 COMMAND_PREFIX = process.env.COMMAND_PREFIX;
 BOT_ID = process.env.BOT_ID;
-MEZON_HOST = process.env.MEZON_HOST;
-MEZON_PORT = process.env.MEZON_PORT;
-MEZON_SSL = process.env.MEZON_SSL;
 DEFAULT_LANG = "en";
 
 LIVE_STATUS_MAP = new Map();
@@ -43,16 +40,11 @@ HELP_MESSAGE = `COMMANDS
   list all command
 `
 
-console.log("Main TOKEN: ", process.env.APPLICATION_TOKEN)
-const client = new MezonClient(process.env.APPLICATION_TOKEN, MEZON_HOST, MEZON_PORT, true);
+const client = new MezonClient(process.env.APPLICATION_TOKEN);
 
 async function main() {
-  console.log("client-authenticate");
-  const result = await client.authenticate();
-  console.log('authenticated.', result);
-
-  console.log("client-authenticate-success");
-  client.on("channel_message", (event) => {
+  await client.login()
+  client.onChannelMessage((event) => {
     // console.log("event: ", event);
     let originMessage = event?.content?.t;
 
@@ -233,27 +225,13 @@ function handleDebug(event) {
 }
 
 function sendRef(event, message) {
-  client.sendMessage(
-    event?.clan_id,
-    event?.channel_id,
-    2,
-    event?.is_public,
+  const channel = client.channels.get(event?.channel_id);
+  const comingMessage = channel.messages.get(event?.message_id);
+  if (!comingMessage) {
+    console.log("Cannot find message to reply");
+    return;
+  }
+  comingMessage.reply(
     { t: message },
-    [],
-    [],
-    [
-      {
-        message_id: '',
-        message_ref_id: event.message_id,
-        ref_type: 0,
-        message_sender_id: event.sender_id,
-        message_sender_username: event.username,
-        mesages_sender_avatar: event.avatar,
-        message_sender_clan_nick: event.clan_nick,
-        message_sender_display_name: event.display_name,
-        content: JSON.stringify(event.content),
-        has_attachment: false,
-      },
-    ]
   );
 }
